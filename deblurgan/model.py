@@ -17,9 +17,9 @@ ngf = 64
 ndf = 64
 input_nc = 3
 output_nc = 3
-input_shape_generator = (256, 256, input_nc)
+input_shape_generator = (256, 256, input_nc)  # (256,256,3)
 input_shape_discriminator = (256, 256, output_nc)
-n_blocks_gen = 9
+n_blocks_gen = 9  # 残差模块数目
 
 
 def generator_model():
@@ -27,19 +27,22 @@ def generator_model():
     # Current version : ResNet block
     inputs = Input(shape=image_shape)
 
-    x = ReflectionPadding2D((3, 3))(inputs)
+    x = ReflectionPadding2D((3, 3))(inputs) #此时x为一个 (?, 262, 262, 3)
+    #  add a convolution layer with 64 filters
+    #  filters: the demonstrate of outputs
     x = Conv2D(filters=ngf, kernel_size=(7, 7), padding='valid')(x)
     x = BatchNormalization()(x)
-    x = Activation('relu')(x)
+    x = Activation('relu')(x)  # add activation
 
     n_downsampling = 2
-    for i in range(n_downsampling):
+    for i in range(n_downsampling):   # 下采样操作
         mult = 2**i
+        #  strides: the step of convolution
         x = Conv2D(filters=ngf*mult*2, kernel_size=(3, 3), strides=2, padding='same')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
-    mult = 2**n_downsampling
+    mult = 2**n_downsampling  
     for i in range(n_blocks_gen):
         x = res_block(x, ngf*mult, use_dropout=True)
 

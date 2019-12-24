@@ -22,11 +22,10 @@ Use:
 python scripts/organize_gopro_dataset.py --dir_in=GOPRO_Large --dir_out=images
 ```
 
-
 # Training
 
 ```
-python scripts/train.py --n_images=512 --batch_size=16 --log_dir /path/to/log/dir
+python scripts/train.py --max_images=512 --batch_size=16 --log_dir /path/to/log/dir
 ```
 
 Use `python scripts/train.py --help` for all options
@@ -34,7 +33,7 @@ Use `python scripts/train.py --help` for all options
 # Testing
 
 ```
-python scripts/test.py
+python scripts/test.py --batch_size=512
 ```
 
 Use `python scripts/test.py --help` for all options

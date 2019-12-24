@@ -7,7 +7,7 @@ from keras.layers import Input, Conv2D, Activation, BatchNormalization
 from keras.layers.merge import Add
 from keras.utils import conv_utils
 from keras.layers.core import Dropout
-
+from keras.backend.common import normalize_data_format
 
 def res_block(input, filters, kernel_size=(3, 3), strides=(1, 1), use_dropout=False):
     """
@@ -28,7 +28,7 @@ def res_block(input, filters, kernel_size=(3, 3), strides=(1, 1), use_dropout=Fa
     x = Activation('relu')(x)
 
     if use_dropout:
-        x = Dropout(0.5)(x)
+        x = Dropout(0.5)(x)  # dropout 0.5 nodes
 
     x = ReflectionPadding2D((1, 1))(x)
     x = Conv2D(filters=filters,
@@ -49,9 +49,6 @@ def spatial_reflection_2d_padding(x, padding=((1, 1), (1, 1)), data_format=None)
     :param data_format: Tensorflow vs Theano convention ('channels_last', 'channels_first')
     :return: Tensorflow tensor
     """
-    assert len(padding) == 2
-    assert len(padding[0]) == 2
-    assert len(padding[1]) == 2
     if data_format is None:
         data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
@@ -64,18 +61,18 @@ def spatial_reflection_2d_padding(x, padding=((1, 1), (1, 1)), data_format=None)
                    list(padding[1])]
     else:
         pattern = [[0, 0],
-                   list(padding[0]), list(padding[1]),
+                   list(padding[0]), 
+                   list(padding[1]),
                    [0, 0]]
-    return tf.pad(x, pattern, "REFLECT")
+
+    return tf.pad(x, pattern, "REFLECT")# 填充4维张量的第二维和第三维(?, 262, 262, 3)
 
 
 # TODO: Credits
-class ReflectionPadding2D(Layer):
-    """Reflection-padding layer for 2D input (e.g. picture).
-    This layer can add rows and columns or zeros
-    at the top, bottom, left and right side of an image tensor.
+class ReflectionPadding2D(Layer): # 用作边界扩展
+    """
     # Arguments
-        padding: int, or tuple of 2 ints, or tuple of 2 tuples of 2 ints.
+        padding: int, or tuple of 2 ints, or tuple of 2 tuples of 2 ints. 规定了边界扩展的像素大小
             - If int: the same symmetric padding
                 is applied to width and height.
             - If tuple of 2 ints:
@@ -85,7 +82,7 @@ class ReflectionPadding2D(Layer):
             - If tuple of 2 tuples of 2 ints:
                 interpreted as
                 `((top_pad, bottom_pad), (left_pad, right_pad))`
-        data_format: A string,
+        data_format: A string, 规定了输入和输出的顺序，不用管他
             one of `channels_last` (default) or `channels_first`.
             The ordering of the dimensions in the inputs.
             `channels_last` corresponds to inputs with shape
@@ -101,7 +98,7 @@ class ReflectionPadding2D(Layer):
             `(batch, rows, cols, channels)`
         - If `data_format` is `"channels_first"`:
             `(batch, channels, rows, cols)`
-    # Output shape
+    # Output shape 
         4D tensor with shape:
         - If `data_format` is `"channels_last"`:
             `(batch, padded_rows, padded_cols, channels)`
@@ -114,7 +111,9 @@ class ReflectionPadding2D(Layer):
                  data_format=None,
                  **kwargs):
         super(ReflectionPadding2D, self).__init__(**kwargs)
-        self.data_format = conv_utils.normalize_data_format(data_format)
+        self.data_format = normalize_data_format(data_format)
+
+        # for padding
         if isinstance(padding, int):
             self.padding = ((padding, padding), (padding, padding))
         elif hasattr(padding, '__len__'):
@@ -133,9 +132,10 @@ class ReflectionPadding2D(Layer):
                              'or a tuple of 2 tuples of 2 ints '
                              '((top_pad, bottom_pad), (left_pad, right_pad)). '
                              'Found: ' + str(padding))
-        self.input_spec = InputSpec(ndim=4)
 
-    def compute_output_shape(self, input_shape):
+        self.input_spec = InputSpec(ndim=4)  # 规定输入是4维
+
+    def compute_output_shape(self, input_shape): #返回输出的shape
         if self.data_format == 'channels_first':
             if input_shape[2] is not None:
                 rows = input_shape[2] + self.padding[0][0] + self.padding[0][1]
@@ -163,7 +163,9 @@ class ReflectionPadding2D(Layer):
                     cols,
                     input_shape[3])
 
-    def call(self, inputs):
+
+
+    def call(self, inputs): #此时inputs 的shape 是一个max_image * 256 * 256 * 3 的张量
         return spatial_reflection_2d_padding(inputs,
                                              padding=self.padding,
                                              data_format=self.data_format)

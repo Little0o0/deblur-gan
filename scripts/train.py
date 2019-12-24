@@ -4,14 +4,14 @@ import click
 import numpy as np
 import tqdm
 
-from deblurgan.utils import load_images, write_log
+from deblurgan.utils import load_images
 from deblurgan.losses import wasserstein_loss, perceptual_loss
 from deblurgan.model import generator_model, discriminator_model, generator_containing_discriminator_multiple_outputs
 
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 
-BASE_DIR = 'weights/'
+BASE_DIR = 'weights//'
 
 
 def save_all_weights(d, g, epoch_number, current_loss):
@@ -23,9 +23,9 @@ def save_all_weights(d, g, epoch_number, current_loss):
     d.save_weights(os.path.join(save_dir, 'discriminator_{}.h5'.format(epoch_number)), True)
 
 
-def train_multiple_outputs(n_images, batch_size, log_dir, epoch_num, critic_updates=5):
-    data = load_images('./images/train', n_images)
-    y_train, x_train = data['B'], data['A']
+def train_multiple_outputs(max_images, batch_size, log_dir, epoch_num, critic_updates=5):
+    data = load_images('images//train', max_images)
+    y_train, x_train = data['sharp_imgs'], data['blur_imgs']
 
     g = generator_model()
     d = discriminator_model()
@@ -44,7 +44,7 @@ def train_multiple_outputs(n_images, batch_size, log_dir, epoch_num, critic_upda
 
     output_true_batch, output_false_batch = np.ones((batch_size, 1)), -np.ones((batch_size, 1))
 
-    log_path = './logs'
+    log_path = 'logs'
     tensorboard_callback = TensorBoard(log_path)
 
     for epoch in tqdm.tqdm(range(epoch_num)):
@@ -81,13 +81,13 @@ def train_multiple_outputs(n_images, batch_size, log_dir, epoch_num, critic_upda
 
 
 @click.command()
-@click.option('--n_images', default=-1, help='Number of images to load for training')
+@click.option('--max_images', default=-1, help='Number of images to load for training')
 @click.option('--batch_size', default=16, help='Size of batch')
 @click.option('--log_dir', required=True, help='Path to the log_dir for Tensorboard')
 @click.option('--epoch_num', default=4, help='Number of epochs for training')
 @click.option('--critic_updates', default=5, help='Number of discriminator training')
-def train_command(n_images, batch_size, log_dir, epoch_num, critic_updates):
-    return train_multiple_outputs(n_images, batch_size, log_dir, epoch_num, critic_updates)
+def train_command(max_images, batch_size, log_dir, epoch_num, critic_updates):
+    return train_multiple_outputs(max_images, batch_size, log_dir, epoch_num, critic_updates)
 
 
 if __name__ == '__main__':
